@@ -1,4 +1,3 @@
-```md
 # One-Off VPN on AWS
 
 Launch a temporary self-hosted OpenVPN server on AWS with Terraform, use it for a few hours, and let it auto-terminate when finished.
@@ -241,5 +240,4 @@ terraform output -raw vpn_password
 
 ```bash
 terraform destroy --auto-approve -var="auto_shutdown_hours=4" -var="aws_region=us-east-1"
-```
 ```
