@@ -24,7 +24,7 @@ However, this should not be described as a guaranteed “no log” solution. AWS
 - Installs OpenVPN Access Server automatically.
 - Generates a random VPN password.
 - Outputs the server IP address.
-- Lets you choose how many hours the server should stay alive.
+- Lets you choose the region, instance type, and how many hours the server should stay alive.
 - Terminates the instance automatically after the selected time.
 
 ## Prerequisites
@@ -83,17 +83,16 @@ This downloads the required Terraform providers.
 Run:
 
 ```bash
-terraform apply --auto-approve -var="auto_shutdown_hours=72" -var="aws_region=us-east-1"
+terraform apply --auto-approve -var="auto_shutdown_hours=24" -var="aws_region=us-east-1" -var="instance_type=t3.medium"
 ```
 
 You can change:
 
-- `auto_shutdown_hours=72` to any number of hours you want.
-- `aws_region=us-east-1` to another AWS region if needed.
+- `auto_shutdown_hours=24` to any number of hours you want (default is 24).
+- `aws_region=us-east-1` to another AWS region if needed (default is us-east-1).
+- `instance_type=t3.medium` to a different instance type if needed (default is t3.medium).
 
-If you do not provide values, the default region is:
-
-- `us-east-1`
+If you run `terraform apply --auto-approve` without providing variable values, it will automatically deploy a `t3.medium` instance in `us-east-1` that auto-shuts down in 24 hours.
 
 ### Step 5: Wait a few minutes
 
@@ -123,20 +122,6 @@ Then:
 
 Once connected, your internet traffic will go through the AWS VPN server.
 
-## Example
-
-Example launch command:
-
-```bash
-terraform apply --auto-approve -var="auto_shutdown_hours=4" -var="aws_region=us-east-1"
-```
-
-Example login details after launch:
-
-- Server/IP: the public IP shown in Terraform output
-- Username: `openvpn`
-- Password: from `terraform output -raw vpn_password`
-
 ## For non-technical users
 
 This setup is easiest if someone technical launches it for you once and sends you:
@@ -161,7 +146,7 @@ That is all you need for normal use.
 
 The server is configured to shut itself down after the number of hours you choose.
 
-Because the EC2 instance is set to terminate on instance-initiated shutdown, the server should delete itself instead of remaining stopped.
+Because the EC2 instance is set to terminate on instance-initiated shutdown, the server should delete itself completely from AWS instead of remaining stopped, ensuring no further compute charges occur.
 
 ## How to terminate manually
 
@@ -172,10 +157,10 @@ If you want to stop using it immediately, terminate it from AWS or destroy it wi
 Run this in the same folder:
 
 ```bash
-terraform destroy --auto-approve -var="auto_shutdown_hours=72" -var="aws_region=us-east-1"
+terraform destroy --auto-approve
 ```
 
-This is the best option because it removes the Terraform-managed resources cleanly.
+This is the best option because it removes the Terraform-managed resources cleanly, including the security group.
 
 ### Option 2: Terminate from AWS Console
 
@@ -186,13 +171,9 @@ You can also:
 3. Find the instance created by this project.
 4. Terminate the instance.
 
-Note: if you terminate only the EC2 instance manually, other Terraform-managed resources such as security groups or key-related resources may still remain until you run `terraform destroy`.
+Note: if you terminate only the EC2 instance manually, other Terraform-managed resources such as security groups will remain until you run `terraform destroy`.
 
 ## Troubleshooting
-
-### Terraform hangs or shows timeout on port 22
-
-If SSH port 22 is closed, any SSH-based wait step will fail. Use the version of the Terraform code that does not rely on SSH checking.
 
 ### OpenVPN app cannot connect
 
@@ -201,7 +182,7 @@ Check:
 - The instance is still running.
 - Port 943 is open.
 - Port 1194 UDP is open if your configuration uses it for VPN tunnel traffic.
-- You waited long enough for OpenVPN to finish installing.
+- You waited long enough for OpenVPN to finish installing (at least 3 minutes).
 - You entered the correct username and password.
 
 ### Certificate warning appears
@@ -210,14 +191,12 @@ This is normal for a fresh self-hosted VPN unless you configure a trusted certif
 
 ## Cost
 
-This project creates AWS resources that may incur charges.
+This project creates AWS resources that will incur charges. The exact cost depends on your chosen parameters and data transfer usage.
 
-Costs depend on:
+**Baseline Default Cost:**
+By default, this script provisions a **t3.medium** instance in the **us-east-1** region. As of 2026, the On-Demand rate for a Linux `t3.medium` instance in `us-east-1` is **$0.0416 per hour**.
 
-- EC2 instance type
-- Region
-- Data transfer usage
-- How long the instance stays alive
+A standard default run (24 hours) will cost approximately **$1.00** in compute costs. Data transfer out from AWS to the internet may incur additional standard AWS bandwidth charges depending on your usage.
 
 If you have AWS credits, this can be a convenient way to use them for temporary VPN access.
 
@@ -232,12 +211,12 @@ If you have AWS credits, this can be a convenient way to use them for temporary 
 
 ```bash
 terraform init
-terraform apply --auto-approve -var="auto_shutdown_hours=4" -var="aws_region=us-east-1"
+terraform apply --auto-approve -var="auto_shutdown_hours=24" -var="aws_region=us-east-1"
 terraform output -raw vpn_password
 ```
 
 ## Quick terminate
 
 ```bash
-terraform destroy --auto-approve -var="auto_shutdown_hours=4" -var="aws_region=us-east-1"
+terraform destroy --auto-approve
 ```

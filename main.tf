@@ -21,8 +21,14 @@ variable "aws_region" {
 
 variable "auto_shutdown_hours" {
   type        = number
-  default     = 4
+  default     = 24
   description = "How many hours should the VPN run before auto-shutting down?"
+}
+
+variable "instance_type" {
+  type        = string
+  default     = "t3.medium"
+  description = "The EC2 instance type to use for the VPN server."
 }
 
 provider "aws" {
@@ -78,7 +84,7 @@ resource "aws_security_group" "vpn_sg" {
 # 4. EC2 Instance (No SSH Keys needed)
 resource "aws_instance" "vpn_server" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.medium"
+  instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.vpn_sg.id]
 
   instance_initiated_shutdown_behavior = "terminate"
@@ -146,7 +152,7 @@ output "z_instructions" {
       tap "Accept" to proceed)
 
   3. Auto-Stop:
-     This instance will automatically shutdown and terminate in ${var.auto_shutdown_hours} hours.
+     This ${var.instance_type} instance will automatically shutdown and terminate in ${var.auto_shutdown_hours} hours.
   --------------------------------------------------------------
   EOT
 }
