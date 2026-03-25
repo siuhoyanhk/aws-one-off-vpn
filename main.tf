@@ -57,7 +57,15 @@ resource "aws_security_group" "vpn_sg" {
   name        = "openvpn-sg-${var.aws_region}-${random_password.vpn_password.result}"
   description = "Allow OpenVPN"
 
-  # Used by the OpenVPN app to authenticate and pull the profile
+  # Required for OpenVPN Daemon TCP fallback and Client UI forwarding
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Direct Admin/Client Web UI port
   ingress {
     from_port   = 943
     to_port     = 943
@@ -65,7 +73,7 @@ resource "aws_security_group" "vpn_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   
-  # Required for the actual VPN tunnel traffic to transmit
+  # Required for the actual VPN tunnel traffic (preferred protocol)
   ingress {
     from_port   = 1194
     to_port     = 1194
